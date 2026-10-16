@@ -66,6 +66,7 @@
         <select id="target">
           <option value="pc">PC(→ .sav)</option>
           <option value="switch">Switch(→ 无扩展名)</option>
+          <option value="ps5">PS5(→ .sav,未校准)</option>
         </select></label>
       <label><span data-i18n="ver.label">版本号(与平台独立)</span>
         <select id="veropt">
@@ -139,8 +140,10 @@ const STRINGS = {
     "conv.downloaded":"已下载 {name}。",
     "conv.tipSwitch":"Switch 端用 Checkpoint 放回 /switch/Checkpoint/saves/.../ 对应槽位 restore。",
     "conv.tipPC":"PC 端放进游戏存档目录(如 Steam userdata 下 remote/)对应空槽位即可。",
+    "conv.tipPS5":"PS5 端需破解主机 + Apollo Save Tool / Save Mounter 解密并重新签名;本工具只产出内部 JSON,实际回注需在主机完成。",
+    "conv.unverified":"⚠️ 目标平台 {target} 未经真实样本校准(文件名/版本为假设值),请在主机上验证可读性。",
     "parse.fail":"解析失败:{msg}",
-    "target.pc":"PC","target.switch":"Switch"
+    "target.pc":"PC","target.switch":"Switch","target.ps5":"PS5"
   },
   en: {
     "ui.lang":"Language",
@@ -189,8 +192,10 @@ const STRINGS = {
     "conv.downloaded":"Downloaded {name}.",
     "conv.tipSwitch":"On Switch, use Checkpoint to restore into /switch/Checkpoint/saves/.../ for the matching slot.",
     "conv.tipPC":"On PC, drop it into the game's save directory (e.g. under Steam userdata/remote/) as an empty slot.",
+    "conv.tipPS5":"On PS5 you need a jailbroken console + Apollo Save Tool / Save Mounter to decrypt & re-sign; this tool only produces the internal JSON — the actual injection is done on the console.",
+    "conv.unverified":"⚠️ Target {target} is unverified (filename/version are assumptions) — please verify readability on the console.",
     "parse.fail":"Parse failed: {msg}",
-    "target.pc":"PC","target.switch":"Switch"
+    "target.pc":"PC","target.switch":"Switch","target.ps5":"PS5"
   },
   ja: {
     "ui.lang":"言語",
@@ -239,8 +244,10 @@ const STRINGS = {
     "conv.downloaded":"{name} をダウンロードしました。",
     "conv.tipSwitch":"Switch では Checkpoint で /switch/Checkpoint/saves/.../ の対応スロットへ戻して restore。",
     "conv.tipPC":"PC ではゲームのセーブディレクトリ(Steam userdata 配下の remote/ など)の空スロットへ配置してください。",
+    "conv.tipPS5":"PS5 では改造済み本体 + Apollo Save Tool / Save Mounter で復号・再署名が必要です。本ツールは内部 JSON を生成するのみで、実際の書き戻しは本体側で行います。",
+    "conv.unverified":"⚠️ 対象 {target} は実サンプル未検証です(ファイル名/バージョンは仮定)。本体での読み取り可否を確認してください。",
     "parse.fail":"解析失敗: {msg}",
-    "target.pc":"PC","target.switch":"Switch"
+    "target.pc":"PC","target.switch":"Switch","target.ps5":"PS5"
   }
 };
 
@@ -253,7 +260,8 @@ const LANGS = [
 /* 下拉选项文案(独立翻译,避免重建时丢失已选值) */
 const TARGET_OPT = {
   pc:{zh:"PC(→ .sav)", en:"PC (→ .sav)", ja:"PC(→ .sav)"},
-  switch:{zh:"Switch(→ 无扩展名)", en:"Switch (→ no ext)", ja:"Switch(→ 拡張子なし)"}
+  switch:{zh:"Switch(→ 无扩展名)", en:"Switch (→ no ext)", ja:"Switch(→ 拡張子なし)"},
+  ps5:{zh:"PS5(→ .sav,未校准)", en:"PS5 (→ .sav, unverified)", ja:"PS5(→ .sav,未確認)"}
 };
 const VER_OPT = {
   "":{zh:"保持原版本号", en:"Keep original version", ja:"元のバージョンを保持"},
@@ -409,11 +417,13 @@ function render(d,name){
   return html;
 }
 
+const PLAT_EXT={pc:".sav",switch:"",ps5:".sav"};
 function platformFilename(name,target){
+  const ext=PLAT_EXT[target]!=null?PLAT_EXT[target]:"";
   const m=name.match(/^(.*?)(\d+)(\.sav)?$/i);
   if(!m) return name;
   const prefix=m[1], slot=m[2];
-  return target==="pc" ? `${prefix}${slot}.sav` : `${prefix}${slot}`;
+  return `${prefix}${slot}${ext}`;
 }
 
 function doConvert(){
@@ -444,9 +454,11 @@ function doConvert(){
   a.href=URL.createObjectURL(blob); a.download=outName;
   a.click();
   const badge = errs ? `<span class="badge b-err">${t('conv.err')}</span>` : `<span class="badge b-ok">${t('conv.pass')}</span>`;
-  const tip = target==="switch" ? t('conv.tipSwitch') : t('conv.tipPC');
+  const tip = target==="switch" ? t('conv.tipSwitch') : (target==="ps5" ? t('conv.tipPS5') : t('conv.tipPC'));
+  const UNVERIFIED=new Set(["ps5"]);
   let msg=`<div class="card"><h2>${t('conv.done')} ${badge}</h2>`;
   msg+=`<div class="issue">${t('conv.target',{target:t('target.'+target)})}${ver?esc(t('conv.targetVer',{v:ver})):""}</div>`;
+  if(UNVERIFIED.has(target)) msg+=`<div class="issue warn">${t('conv.unverified',{target:t('target.ps5')})}</div>`;
   for(const [key,params] of changes) msg+=`<div class="issue">- ${esc(t(key,params))}</div>`;
   msg+=`<div class="note">${t('conv.downloaded',{name:esc(outName)})} ${tip}</div></div>`;
   document.getElementById("result").insertAdjacentHTML("afterbegin",msg);

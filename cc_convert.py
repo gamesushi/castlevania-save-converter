@@ -2,6 +2,8 @@
 """
 cc_convert.py — Castlevania: Belmont's Curse 存档转换/校验 CLI
 ================================================================
+支持平台: PC / Switch / PS5(PS5 文件名/版本尚未用真实样本校准,见下方警告)
+================================================================
 用法:
   # 校验 + 摘要报告
   python3 cc_convert.py switch_BuildSave_0 --report
@@ -100,14 +102,15 @@ def _print_report(data, path):
 
 def main():
     ap = argparse.ArgumentParser(
-        description="Castlevania: Belmont's Curse PC<->Switch 存档工具")
+        description="Castlevania: Belmont's Curse PC<->Switch<->PS5 存档工具")
     ap.add_argument("input", help=".sav 文件 或 Checkpoint dump 目录")
     ap.add_argument("--out", help="单文件输出路径(输入为文件时)")
     ap.add_argument("--out-dir", help="目录输出(输入为目录时,镜像结构)")
-    ap.add_argument("--target", choices=["pc", "switch"], default="pc",
-                    help="目标平台:只决定输出文件名扩展名(.sav / 无扩展名),不影响版本号")
+    ap.add_argument("--target", choices=list(cs.PLATFORMS.keys()), default="pc",
+                    help="目标平台:只决定输出文件名扩展名(.sav / 无扩展名),不影响版本号。"
+                         "可选: " + ", ".join(cs.PLATFORMS.keys()))
     ap.add_argument("--slot", type=int, default=None,
-                    help="目标槽位序号(Switch 从0 / PC 从1);不指定则沿用原文件名数字")
+                    help="目标槽位序号(各平台独立;不指定则沿用原文件名数字)")
     ap.add_argument("--report", action="store_true", help="打印校验 + 摘要")
     ap.add_argument("--strip", help="逗号分隔的 item 子串,匹配则剥离(DLC 独占内容)")
     ap.add_argument("--set-version", help="版本号(与 --target 完全独立;不传则保持原存档版本号)")
@@ -121,6 +124,11 @@ def main():
     if not loaded:
         print(f"[错误] 在 {args.input} 未找到任何 .sav", file=sys.stderr)
         sys.exit(1)
+
+    # 目标平台未校准(如 PS5 暂无真实样本)→ 醒目警告
+    if not cs.platform_verified(args.target):
+        print(f"⚠️  警告:目标平台 '{args.target}' 尚未用真实存档样本校准"
+              f"(文件名/版本为假设值)。转换结果请务必在目标主机上验证可读性。\n")
 
     strip = [x.strip() for x in (args.strip or "").split(",") if x.strip()]
 
@@ -170,11 +178,15 @@ def main():
             print(f"         校验: {'有错误!' if errs else ('通过(字节保真)' if not modified else '通过')}")
 
     if not args.quiet:
-        tip = ("Switch 端请用 Checkpoint 把生成的 .sav 放回 "
-               "/switch/Checkpoint/saves/.../ 对应槽位再 restore。"
-               if args.target == "switch" else
-               "PC 端把生成的 .sav 放进游戏存档目录(如 Steam userdata 下的 "
-               "remote/)对应空槽位即可。")
+        tip = {
+            "switch": "Switch 端请用 Checkpoint 把生成的文件放回 "
+                      "/switch/Checkpoint/saves/.../ 对应槽位再 restore。",
+            "ps5": "PS5 端需要破解版主机 + Apollo Save Tool / Save Mounter 解密与重新签名;"
+                   "本工具只产出内部 JSON 文件,实际回注需你在主机上完成。",
+        }.get(
+            args.target,
+            "PC 端把生成的 .sav 放进游戏存档目录(如 Steam userdata 下的 "
+            "remote/)对应空槽位即可。")
         print("\n完成。" + tip)
 
 

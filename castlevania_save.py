@@ -39,14 +39,18 @@ REQUIRED_PLAYER_KEYS = [
 # 结构也一致,因此跨版本搬运是纯元数据对齐,无数据风险。
 KNOWN_VERSIONS = {"1.1.0", "1.1.1"}
 
-PC_REF_VERSION = "1.1.1"
-SWITCH_REF_VERSION = "1.1.0"
-
-# 平台文件名约定(实测):
-#   Switch (Checkpoint dump): BuildSave_0, BuildSave_1, ...  ← 无扩展名,槽位从 0 起
-#   PC     (Steam/PC 存档目录): BuildSave_1.sav, BuildSave_2.sav, ... ← .sav 扩展名,槽位从 1 起
-# 槽位数字本身只代表"第几个存档槽",PC 与 Switch 各自独立;转换时保留原数字,
-# 仅切换扩展名,目标槽位由用户用 --out / --slot 指定。
+# 各平台约定(数据驱动:加平台只需在此登记,无需改逻辑)。
+#   ext         : 输出文件的扩展名(空串=无扩展名)
+#   ref_version : 该平台的参考版本号(仅作提示;真正转换时版本仍由用户 --set-version 决定)
+#   verified    : 是否已用真实样本校准文件名/版本(PS5 暂无样本,标 False)
+#   label       : 显示名
+PLATFORMS = {
+    "pc":     {"ext": ".sav", "ref_version": "1.1.1", "verified": True,  "label": "PC"},
+    "switch": {"ext": "",     "ref_version": "1.1.0", "verified": True,  "label": "Switch"},
+    # PS5: 内部数据极大概率同款 Unity JSON,但本机暂无 PS5 解密样本,
+    # 故文件名/版本均未经真实样本校准。ext 暂按 .sav 假设,待样本确认后修正。
+    "ps5":    {"ext": ".sav", "ref_version": None,   "verified": False, "label": "PS5"},
+}
 
 # 预购/午夜版独占皮肤(待游戏内确认,默认不剥离)。
 # 注:Switch 与 PC 样本里 equippedSkin 都是 Skin_MC_Alucard,说明它至少是
@@ -279,25 +283,36 @@ def detect_slot(filename: str):
 def platform_filename(name: str, to_platform: str, slot: int | None = None):
     """
     按目标平台约定重写文件名(只改扩展名,保留槽位数字;slot 可显式覆盖)。
-    to_platform='pc'    -> 加 '.sav'
-    to_platform='switch' -> 去掉 '.sav'
+    扩展名来自 PLATFORMS[to_platform]["ext"];未知平台原样返回。
     """
+    cfg = PLATFORMS.get(to_platform)
+    if not cfg:
+        return name
     info = detect_slot(name)
     if not info:
         return name
-    prefix, _, _ = info
+    prefix, orig_slot, _ = info
     if slot is None:
-        slot = info[1]
-    if to_platform == "pc":
-        return f"{prefix}{slot}.sav"
-    if to_platform == "switch":
-        return f"{prefix}{slot}"
-    return name
+        slot = orig_slot
+    return f"{prefix}{slot}{cfg['ext']}"
 
 
 def platform_version(to_platform: str):
-    """仅用于"建议版本"提示;实际转换时版本与目标平台完全解耦,由调用方显式决定。"""
-    return PC_REF_VERSION if to_platform == "pc" else SWITCH_REF_VERSION
+    """返回该平台的参考版本号;未校准/未知时返回 None。"""
+    cfg = PLATFORMS.get(to_platform)
+    return cfg["ref_version"] if cfg else None
+
+
+def platform_label(to_platform: str):
+    """返回平台显示名(如 'PC' / 'PS5')。"""
+    cfg = PLATFORMS.get(to_platform)
+    return cfg["label"] if cfg else to_platform
+
+
+def platform_verified(to_platform: str) -> bool:
+    """该平台的文件名/版本是否已由真实样本校准。"""
+    cfg = PLATFORMS.get(to_platform)
+    return bool(cfg and cfg.get("verified"))
 
 
 def convert_to_platform(data, to_platform: str, version: str = None,
@@ -311,10 +326,16 @@ def convert_to_platform(data, to_platform: str, version: str = None,
     set_ver = version if version else None
     _, changes, modified = convert(data, strip_items=strip_items,
                                    set_version=set_ver)
+    label = platform_label(to_platform)
     if set_ver:
-        changes.insert(0, f"目标平台: {to_platform} (version -> {set_ver})")
+        changes.insert(0, f"目标平台: {label} (version -> {set_ver})")
     else:
-        changes.insert(0, f"目标平台: {to_platform} (version 保持原值 {data.get('version')})")
+        changes.insert(0, f"目标平台: {label} (version 保持原值 {data.get('version')})")
+    if not platform_verified(to_platform):
+        changes.insert(
+            0,
+            f"⚠️ 目标平台 {label} 未经真实样本校准:文件名/版本为假设值,"
+            f"转换后请务必在目标主机上验证存档可被读取")
     return data, changes, modified
 
 
