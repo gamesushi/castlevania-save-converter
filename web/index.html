@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>恶魔城:贝尔蒙特的诅咒 — 存档转换器 (PC ⇄ Switch)</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --ink:#1f2430; --muted:#6b7280;
+    --line:#e4e7ec; --accent:#7c3aed; --accent2:#0ea5e9;
+    --ok:#16a34a; --warn:#d97706; --err:#dc2626;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.5;padding:24px}
+  .wrap{max-width:880px;margin:0 auto}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  .langsel{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+  .langsel select{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;background:#fff;color:var(--ink)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+  #drop{border:2px dashed var(--line);border-radius:12px;padding:28px;text-align:center;color:var(--muted);
+    cursor:pointer;transition:.15s;background:var(--card)}
+  #drop.over{border-color:var(--accent);background:#f5f0ff;color:var(--ink)}
+  #drop b{color:var(--accent)}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+  label>span{font-size:13px;color:var(--muted)}
+  input[type=text]{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;min-width:220px}
+  select{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;min-width:200px;background:#fff;color:var(--ink)}
+  button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:9px 16px;font-size:13px;cursor:pointer}
+  button.ghost{background:#fff;color:var(--accent);border:1px solid var(--accent)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .badge{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;font-weight:600}
+  .b-ok{background:#dcfce7;color:var(--ok)} .b-warn{background:#fef3c7;color:var(--warn)} .b-err{background:#fee2e2;color:var(--err)}
+  h2{font-size:15px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}
+  .kv{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed var(--line);padding:4px 0;font-size:13px}
+  .kv .k{color:var(--muted)} .kv .v{font-weight:600;text-align:right;word-break:break-all}
+  .issue{font-size:13px;padding:5px 0;border-bottom:1px dashed var(--line)}
+  .hidden{display:none}
+  .note{font-size:12px;color:var(--muted);margin-top:8px}
+  code{background:#f1f1f4;padding:1px 5px;border-radius:4px;font-size:12px}
+  .full{grid-column:1/-1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <h1 id="app-title">恶魔城:贝尔蒙特的诅咒 · 存档转换器</h1>
+      <div class="sub" id="app-sub">PC ⇄ Switch · 离线浏览器工具 · 数据均为明文 JSON,本工具只做校验/摘要/可选清洗,绝不破坏结构</div>
+    </div>
+    <div class="langsel">
+      <span data-i18n="ui.lang">语言</span>
+      <select id="lang"></select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div id="drop">把 <b>BuildSave_*</b> 拖到这里,或 <b>点击选择文件</b><br><span style="font-size:12px">支持 PC 的 .sav 与 Switch(Checkpoint 解密 dump)无扩展名存档</span></div>
+    <input id="file" type="file" accept=".sav,.json" class="hidden">
+    <div class="row">
+      <label><span data-i18n="target.label">目标平台(只决定文件名扩展名)</span>
+        <select id="target">
+          <option value="pc">PC(→ .sav)</option>
+          <option value="switch">Switch(→ 无扩展名)</option>
+        </select></label>
+      <label><span data-i18n="ver.label">版本号(与平台独立)</span>
+        <select id="veropt">
+          <option value="">保持原版本号</option>
+          <option value="1.1.0">1.1.0</option>
+          <option value="1.1.1">1.1.1</option>
+          <option value="__custom">自定义…</option>
+        </select></label>
+      <label id="vercustom-wrap" style="display:none"><span data-i18n="ver.customLabel">自定义版本号</span>
+        <input id="vercustom" type="text" placeholder="例: 1.0.1"></label>
+      <label><span data-i18n="strip.label">剥离 DLC 独占项(逗号分隔子串,可选)</span>
+        <input id="strip" type="text" placeholder="例: Skin_MC_Alucard,Skin_MC_Trevor"></label>
+    </div>
+    <div class="row">
+      <button id="conv" data-i18n="btn.convert" disabled>转换并下载 .sav</button>
+      <button id="rep" class="ghost" data-i18n="btn.report" disabled>仅生成报告</button>
+    </div>
+    <div class="note" id="note-switch">⚠️ Switch 端请用 <b>Checkpoint</b> 把生成的 .sav 放回 <code>/switch/Checkpoint/saves/.../</code> 对应槽位再 restore。官方云存档不跨平台还原。</div>
+  </div>
+
+  <div id="result"></div>
+</div>
+
+<script>
+/* ===================== i18n 字典 ===================== */
+const STRINGS = {
+  zh: {
+    "ui.lang":"语言",
+    "app.title":"恶魔城:贝尔蒙特的诅咒 · 存档转换器",
+    "app.sub":"PC ⇄ Switch · 离线浏览器工具 · 数据均为明文 JSON,本工具只做校验/摘要/可选清洗,绝不破坏结构",
+    "drop.html":'把 <b>BuildSave_*</b> 拖到这里,或 <b>点击选择文件</b><br><span style="font-size:12px">支持 PC 的 .sav 与 Switch(Checkpoint 解密 dump)无扩展名存档</span>',
+    "target.label":"目标平台(只决定文件名扩展名)",
+    "ver.label":"版本号(与平台独立)",
+    "ver.customLabel":"自定义版本号",
+    "ver.customPlaceholder":"例: 1.0.1",
+    "strip.label":"剥离 DLC 独占项(逗号分隔子串,可选)",
+    "strip.placeholder":"例: Skin_MC_Alucard,Skin_MC_Trevor",
+    "btn.convert":"转换并下载 .sav",
+    "btn.report":"仅生成报告",
+    "note.switch":'⚠️ Switch 端请用 <b>Checkpoint</b> 把生成的 .sav 放回 <code>/switch/Checkpoint/saves/.../</code> 对应槽位再 restore。官方云存档不跨平台还原。',
+    "validate.title":"校验",
+    "badge.ok":"通过","badge.warn":"有告警","badge.err":"有错误",
+    "lvl.error":"错误","lvl.warning":"告警","lvl.info":"信息",
+    "iss.rootNotObject":"根不是 JSON 对象",
+    "iss.missingTop":"缺少顶层字段: {k}",
+    "iss.unknownTop":"未知顶层字段(保留): {k}",
+    "iss.noVersion":"无 version 字段",
+    "iss.unknownVersion":"version={v} 不在已知列表;PC/Switch 版本号不同可能字段不一致",
+    "iss.playerMissing":"playerSave 缺失或非对象",
+    "iss.playerMissingField":"playerSave 缺少字段: {k}",
+    "summary.title":"进度摘要",
+    "f.version":"版本","f.playerId":"玩家ID","f.saveDate":"存档时间","f.playTime":"游戏时长(s)",
+    "f.level":"等级","f.exp":"经验","f.hpmp":"HP/MP","f.heal":"治疗次数","f.death":"死亡反抗",
+    "f.weapon":"武器","f.spell":"法术","f.skin":"皮肤","f.inv":"背包数量","f.moves":"体术数",
+    "f.main":"主线完成","f.arcanaTasks":"Arcana 任务","f.arcanaTalents":"Arcana 天赋","f.cutscenes":"已看剧情",
+    "f.tutorials":"教学完成","f.landmarks":"地标","f.rooms":"探索房间","f.curse":"诅咒",
+    "summary.charms":"护符","summary.worlds":"世界进度",
+    "summary.worldItem":"完成物 {a} / 实体 {b}",
+    "summary.board":"进度板","summary.boardItem":"解锁 {a}/{b}",
+    "chg.invRemoved":"从 itemsInInventory 移除 {n} 项",
+    "chg.clearedStripped":"清空被剥离的 {k}: {v}",
+    "chg.charmRemoved":"从 equippedCharmItems 移除 {n} 项",
+    "chg.verChanged":"version: {old} -> {new}",
+    "chg.noChange":"无内容改动(纯身份往返)",
+    "conv.done":"转换完成",
+    "conv.bytecopy":"逐字节复制(无改动)",
+    "conv.bytecopyNote":"已原样下载 {name}。目标平台:{target}。",
+    "conv.pass":"校验通过","conv.err":"校验有错",
+    "conv.target":"目标平台: {target}",
+    "conv.targetVer":" (version → {v})",
+    "conv.downloaded":"已下载 {name}。",
+    "conv.tipSwitch":"Switch 端用 Checkpoint 放回 /switch/Checkpoint/saves/.../ 对应槽位 restore。",
+    "conv.tipPC":"PC 端放进游戏存档目录(如 Steam userdata 下 remote/)对应空槽位即可。",
+    "parse.fail":"解析失败:{msg}",
+    "target.pc":"PC","target.switch":"Switch"
+  },
+  en: {
+    "ui.lang":"Language",
+    "app.title":"Castlevania: Belmont's Curse · Save Converter",
+    "app.sub":"PC ⇄ Switch · Offline browser tool · Saves are plain JSON; this tool only validates/summarizes/optionally cleans — it never breaks structure",
+    "drop.html":'Drag <b>BuildSave_*</b> here, or <b>click to choose a file</b><br><span style="font-size:12px">Supports PC .sav and Switch (Checkpoint decrypted dump) extension-less saves</span>',
+    "target.label":"Target platform (affects only the file extension)",
+    "ver.label":"Version (independent of platform)",
+    "ver.customLabel":"Custom version",
+    "ver.customPlaceholder":"e.g. 1.0.1",
+    "strip.label":"Strip DLC-exclusive items (comma-separated substrings, optional)",
+    "strip.placeholder":"e.g. Skin_MC_Alucard,Skin_MC_Trevor",
+    "btn.convert":"Convert & download .sav",
+    "btn.report":"Report only",
+    "note.switch":'⚠️ On Switch, use <b>Checkpoint</b> to restore the generated .sav into <code>/switch/Checkpoint/saves/.../</code> for the matching slot. Official cloud saves do not restore across platforms.',
+    "validate.title":"Validation",
+    "badge.ok":"OK","badge.warn":"Warnings","badge.err":"Errors",
+    "lvl.error":"error","lvl.warning":"warning","lvl.info":"info",
+    "iss.rootNotObject":"Root is not a JSON object",
+    "iss.missingTop":"Missing top-level field: {k}",
+    "iss.unknownTop":"Unknown top-level field (kept): {k}",
+    "iss.noVersion":"No version field",
+    "iss.unknownVersion":"version={v} is not in the known list; differing PC/Switch versions may have inconsistent fields",
+    "iss.playerMissing":"playerSave missing or not an object",
+    "iss.playerMissingField":"playerSave missing field: {k}",
+    "summary.title":"Progress Summary",
+    "f.version":"Version","f.playerId":"Player ID","f.saveDate":"Save Date","f.playTime":"Play Time (s)",
+    "f.level":"Level","f.exp":"EXP","f.hpmp":"HP/MP","f.heal":"Heal Charges","f.death":"Death Defiance",
+    "f.weapon":"Weapon","f.spell":"Spell","f.skin":"Skin","f.inv":"Inventory","f.moves":"Body Moves",
+    "f.main":"Main Quests","f.arcanaTasks":"Arcana Tasks","f.arcanaTalents":"Arcana Talents","f.cutscenes":"Cutscenes",
+    "f.tutorials":"Tutorials","f.landmarks":"Landmarks","f.rooms":"Rooms Found","f.curse":"Curse",
+    "summary.charms":"Charms","summary.worlds":"World Progress",
+    "summary.worldItem":"Items {a} / Entities {b}",
+    "summary.board":"Progression Board","summary.boardItem":"Unlocked {a}/{b}",
+    "chg.invRemoved":"Removed {n} item(s) from itemsInInventory",
+    "chg.clearedStripped":"Cleared stripped {k}: {v}",
+    "chg.charmRemoved":"Removed {n} item(s) from equippedCharmItems",
+    "chg.verChanged":"version: {old} -> {new}",
+    "chg.noChange":"No content changed (identity pass-through)",
+    "conv.done":"Conversion Complete",
+    "conv.bytecopy":"Byte-identical copy (no change)",
+    "conv.bytecopyNote":"Downloaded {name} as-is. Target platform: {target}.",
+    "conv.pass":"Validation passed","conv.err":"Validation error",
+    "conv.target":"Target platform: {target}",
+    "conv.targetVer":" (version → {v})",
+    "conv.downloaded":"Downloaded {name}.",
+    "conv.tipSwitch":"On Switch, use Checkpoint to restore into /switch/Checkpoint/saves/.../ for the matching slot.",
+    "conv.tipPC":"On PC, drop it into the game's save directory (e.g. under Steam userdata/remote/) as an empty slot.",
+    "parse.fail":"Parse failed: {msg}",
+    "target.pc":"PC","target.switch":"Switch"
+  },
+  ja: {
+    "ui.lang":"言語",
+    "app.title":"悪魔城 ベルモンドの呪い · セーブ変換ツール",
+    "app.sub":"PC ⇄ Switch · オフライン・ブラウザツール · セーブはプレーンな JSON です。本ツールは検証・要約・任意の洗浄のみ行い、構造を壊すことはありません",
+    "drop.html":'<b>BuildSave_*</b> をここへドラッグ、または<b>クリックしてファイル選択</b><br><span style="font-size:12px">PC の .sav と Switch(Checkpoint 復号ダンプ)の拡張子なしセーブに対応</span>',
+    "target.label":"対象プラットフォーム(拡張子のみに影響)",
+    "ver.label":"バージョン(プラットフォームと独立)",
+    "ver.customLabel":"カスタムバージョン",
+    "ver.customPlaceholder":"例: 1.0.1",
+    "strip.label":"DLC 専用アイテムを除去(カンマ区切りの部分一致、任意)",
+    "strip.placeholder":"例: Skin_MC_Alucard,Skin_MC_Trevor",
+    "btn.convert":".sav を変換してダウンロード",
+    "btn.report":"レポートのみ",
+    "note.switch":'⚠️ Switch では <b>Checkpoint</b> で生成した .sav を <code>/switch/Checkpoint/saves/.../</code> の対応スロットへ戻して restore してください。公式クラウドセーブはクロスプラットフォーム非対応です。',
+    "validate.title":"検証",
+    "badge.ok":"通過","badge.warn":"警告あり","badge.err":"エラーあり",
+    "lvl.error":"エラー","lvl.warning":"警告","lvl.info":"情報",
+    "iss.rootNotObject":"ルートが JSON オブジェクトではありません",
+    "iss.missingTop":"上位フィールドがありません: {k}",
+    "iss.unknownTop":"不明な上位フィールド(保持): {k}",
+    "iss.noVersion":"version フィールドがありません",
+    "iss.unknownVersion":"version={v} は既知のリストにありません。PC/Switch でバージョンが異なるとフィールドが一致しない場合があります",
+    "iss.playerMissing":"playerSave が存在しないかオブジェクトではありません",
+    "iss.playerMissingField":"playerSave にフィールドがありません: {k}",
+    "summary.title":"進捗サマリー",
+    "f.version":"バージョン","f.playerId":"プレイヤーID","f.saveDate":"保存日時","f.playTime":"プレイ時間(秒)",
+    "f.level":"レベル","f.exp":"経験値","f.hpmp":"HP/MP","f.heal":"回復回数","f.death":"デス回避",
+    "f.weapon":"武器","f.spell":"呪文","f.skin":"スキン","f.inv":"所持品数","f.moves":"体術数",
+    "f.main":"メインクエスト","f.arcanaTasks":"アルカナタスク","f.arcanaTalents":"アルカナ才能","f.cutscenes":"ムービー視聴",
+    "f.tutorials":"チュートリアル","f.landmarks":"ランドマーク","f.rooms":"探索部屋","f.curse":"呪い",
+    "summary.charms":"チャーム","summary.worlds":"ワールド進捗",
+    "summary.worldItem":"アイテム {a} / 実体 {b}",
+    "summary.board":"進捗ボード","summary.boardItem":"解放 {a}/{b}",
+    "chg.invRemoved":"itemsInInventory から {n} 件を削除",
+    "chg.clearedStripped":"除去された {k} をクリア: {v}",
+    "chg.charmRemoved":"equippedCharmItems から {n} 件を削除",
+    "chg.verChanged":"version: {old} -> {new}",
+    "chg.noChange":"内容の変更なし(同一性パススルー)",
+    "conv.done":"変換完了",
+    "conv.bytecopy":"バイト同一コピー(変更なし)",
+    "conv.bytecopyNote":"{name} をそのままダウンロードしました。対象プラットフォーム:{target}。",
+    "conv.pass":"検証通過","conv.err":"検証エラー",
+    "conv.target":"対象プラットフォーム: {target}",
+    "conv.targetVer":" (version → {v})",
+    "conv.downloaded":"{name} をダウンロードしました。",
+    "conv.tipSwitch":"Switch では Checkpoint で /switch/Checkpoint/saves/.../ の対応スロットへ戻して restore。",
+    "conv.tipPC":"PC ではゲームのセーブディレクトリ(Steam userdata 配下の remote/ など)の空スロットへ配置してください。",
+    "parse.fail":"解析失敗: {msg}",
+    "target.pc":"PC","target.switch":"Switch"
+  }
+};
+
+const LANGS = [
+  {code:"zh", label:"中文"},
+  {code:"en", label:"English"},
+  {code:"ja", label:"日本語"}
+];
+
+/* 下拉选项文案(独立翻译,避免重建时丢失已选值) */
+const TARGET_OPT = {
+  pc:{zh:"PC(→ .sav)", en:"PC (→ .sav)", ja:"PC(→ .sav)"},
+  switch:{zh:"Switch(→ 无扩展名)", en:"Switch (→ no ext)", ja:"Switch(→ 拡張子なし)"}
+};
+const VER_OPT = {
+  "":{zh:"保持原版本号", en:"Keep original version", ja:"元のバージョンを保持"},
+  "1.1.0":{zh:"1.1.0", en:"1.1.0", ja:"1.1.0"},
+  "1.1.1":{zh:"1.1.1", en:"1.1.1", ja:"1.1.1"},
+  "__custom":{zh:"自定义…", en:"Custom…", ja:"カスタム…"}
+};
+
+let LANG = "zh";
+
+function t(key, params){
+  let s = (STRINGS[LANG] && STRINGS[LANG][key] != null) ? STRINGS[LANG][key]
+        : (STRINGS.zh[key] != null ? STRINGS.zh[key] : key);
+  if(params){ for(const k in params) s = s.split("{"+k+"}").join(params[k]); }
+  return s;
+}
+
+function detectLang(){
+  try{ const saved = localStorage.getItem("cvc_lang"); if(saved && STRINGS[saved]) return saved; }catch(e){}
+  const nav = (navigator.language||"zh").slice(0,2).toLowerCase();
+  return STRINGS[nav] ? nav : "zh";
+}
+
+function setSelectLabels(sel, map){
+  if(!sel) return;
+  for(const opt of sel.options){ if(map[opt.value] != null) opt.textContent = map[opt.value][LANG]; }
+}
+
+function applyLang(lang){
+  LANG = lang;
+  document.documentElement.lang = (lang==="zh") ? "zh-CN" : (lang==="ja" ? "ja" : "en");
+  document.title = t("app.title");
+  document.getElementById("app-title").textContent = t("app.title");
+  document.getElementById("app-sub").textContent = t("app.sub");
+  document.getElementById("drop").innerHTML = t("drop.html");
+  document.getElementById("note-switch").innerHTML = t("note.switch");
+  // data-i18n 静态文案
+  document.querySelectorAll("[data-i18n]").forEach(el=>{
+    if(el.id==="app-title" || el.id==="app-sub") return; // 已单独处理
+    el.textContent = t(el.getAttribute("data-i18n"));
+  });
+  // 下拉选项
+  setSelectLabels(document.getElementById("target"), TARGET_OPT);
+  setSelectLabels(document.getElementById("veropt"), VER_OPT);
+  // 自定义版本号占位符
+  const vc = document.getElementById("vercustom");
+  if(vc) vc.placeholder = t("ver.customPlaceholder");
+  const st = document.getElementById("strip");
+  if(st) st.placeholder = t("strip.placeholder");
+  // 语言选择器标记当前项
+  const ls = document.getElementById("lang");
+  if(ls) ls.value = lang;
+  try{ localStorage.setItem("cvc_lang", lang); }catch(e){}
+  // 若已加载存档,重新渲染结果区,使校验/摘要即时翻译
+  if(CURRENT) document.getElementById("result").innerHTML = render(CURRENT.data, CURRENT.name);
+}
+
+/* ===================== 存档逻辑(与 Python 端一致) ===================== */
+const EXPECTED_TOP=["version","playerSave","worldSaves","progressionBoardSave"];
+const REQ_PLAYER=["id","saveDate","playTimeInSeconds","levelId","position","level","experienceCurrent","currentHealth","currentMana","equippedWeaponItem","equippedSpellItem","equippedSkin","itemsInInventory","equippedCharmItems"];
+const KNOWN_VERSIONS=new Set(["1.1.0","1.1.1"]);
+
+let CURRENT=null; // {name, data}
+
+function isMKV(o){return o&&typeof o==="object"&&Array.isArray(o.m_keys)&&Array.isArray(o.m_values);}
+function esc(s){return String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+
+function validate(d){
+  // 返回 [level, key, params]
+  const issues=[];
+  if(!d||typeof d!=="object"){return [["error","iss.rootNotObject",{}]];}
+  for(const k of EXPECTED_TOP) if(!(k in d)) issues.push(["error","iss.missingTop",{k}]);
+  for(const k in d) if(!EXPECTED_TOP.includes(k)) issues.push(["warning","iss.unknownTop",{k}]);
+  const v=d.version;
+  if(v==null) issues.push(["warning","iss.noVersion",{}]);
+  else if(!KNOWN_VERSIONS.has(v)) issues.push(["warning","iss.unknownVersion",{v}]);
+  const ps=d.playerSave;
+  if(ps&&typeof ps==="object"){for(const k of REQ_PLAYER) if(!(k in ps)) issues.push(["warning","iss.playerMissingField",{k}]);}
+  else issues.push(["error","iss.playerMissing",{}]);
+  return issues;
+}
+
+function summarize(d){
+  const s={}; const ps=d.playerSave||{};
+  s.version=d.version; s.player_id=ps.id; s.save_date=ps.saveDate;
+  s.play_time_seconds=ps.playTimeInSeconds; s.level=ps.level; s.experience=ps.experienceCurrent;
+  s.current_health=ps.currentHealth; s.current_mana=ps.currentMana;
+  s.heal_charges=ps.currentHealChargesCount; s.death_defiance=ps.currentTheHermitDeathDefianceCount;
+  s.equipped_weapon=ps.equippedWeaponItem; s.equipped_spell=ps.equippedSpellItem; s.equipped_skin=ps.equippedSkin;
+  s.equipped_charms=ps.equippedCharmItems||[];
+  const inv=ps.itemsInInventory||[]; s.inventory_count=inv.length; s.inventory=inv;
+  s.vania_moves=(ps.vaniaMoves||[]); s.main_objectives_done=(ps.receivedMainObjectives||[]).length;
+  s.arcana_completed_tasks=(ps.arcanaCompletedTasks||[]).length; s.arcana_unlocked_talents=(ps.arcanaUnlockedTalents||[]).length;
+  s.watched_cutscenes=(ps.watchedCutscenes||[]).length; s.completed_tutorials=(ps.completedTutorials||[]).length;
+  s.discovered_landmarks=(ps.discoveredLandmarks||[]).length; s.current_curse=ps.currentCurseID;
+  const wres=ps.worldRoomExplorationStates; if(isMKV(wres)) s.explored_rooms=wres.m_values.length;
+  const worlds={}; const ws=d.worldSaves;
+  if(isMKV(ws)){for(let i=0;i<ws.m_keys.length;i++){const w=ws.m_values[i]; if(w&&typeof w==="object"){const e=w.savableEntityStates; worlds[ws.m_keys[i]]={completion_items:w.currentCompletionItemCount,savable_entities:isMKV(e)?e.m_values.length:null};}}}
+  s.worlds=worlds;
+  const pbs=d.progressionBoardSave||{}; const pbi=pbs.progressionBoardItemsStates;
+  if(isMKV(pbi)){let u=0;for(const v of pbi.m_values) if(String(v).trim().toLowerCase()==="true")u++; s.progression_board={unlocked:u,total:pbi.m_values.length};}
+  return s;
+}
+
+function convert(d,strip,setVer){
+  // 返回 [data, [key,params], ...]
+  const changes=[]; const ps=d.playerSave; if(!ps||typeof ps!=="object") return [d,changes];
+  if(strip&&strip.length){
+    const subs=strip.map(x=>x.toLowerCase());
+    const inv=ps.itemsInInventory; if(Array.isArray(inv)){const b=inv.length; ps.itemsInInventory=inv.filter(it=>!subs.some(s=>String(it).toLowerCase().includes(s))); const removed=b-ps.itemsInInventory.length; if(removed)changes.push(["chg.invRemoved",{n:removed}]);}
+    for(const k of ["equippedWeaponItem","equippedSpellItem","equippedSkin"]){const val=ps[k]; if(val&&subs.some(s=>String(val).toLowerCase().includes(s))){ps[k]=null;changes.push(["chg.clearedStripped",{k,v:val}]);}}
+    const ch=ps.equippedCharmItems; if(Array.isArray(ch)){const b=ch.length; ps.equippedCharmItems=ch.filter(it=>!subs.some(s=>String(it).toLowerCase().includes(s))); const removed=b-ps.equippedCharmItems.length; if(removed)changes.push(["chg.charmRemoved",{n:removed}]);}
+  }
+  if(setVer){const old=d.version; d.version=setVer; changes.push(["chg.verChanged",{old,new:setVer}]);}
+  if(!changes.length) changes.push(["chg.noChange",{}]);
+  return [d,changes];
+}
+
+function render(d,name){
+  const issues=validate(d);
+  const errs=issues.filter(i=>i[0]==="error").length;
+  const warns=issues.filter(i=>i[0]==="warning").length;
+  let html=`<div class="card"><h2>${t('validate.title')} — ${esc(name)} `;
+  html+= errs?`<span class="badge b-err">${t('badge.err')}</span>`: warns?`<span class="badge b-warn">${t('badge.warn')}</span>`:`<span class="badge b-ok">${t('badge.ok')}</span>`;
+  html+=`</h2>`;
+  const lvText={error:t('lvl.error'),warning:t('lvl.warning'),info:t('lvl.info')};
+  for(const [lvl,key,params] of issues){
+    const c=lvl==='error'?'var(--err)':lvl==='warning'?'var(--warn)':'var(--ink)';
+    html+=`<div class="issue" style="color:${c}">[${lvlText[lvl]||lvl}] ${esc(t(key,params))}</div>`;
+  }
+  html+=`</div>`;
+  if(errs) return html;
+
+  const s=summarize(d);
+  html+=`<div class="card"><h2>${t('summary.title')}</h2><div class="full"><div class="grid">`;
+  const add=(k,v)=>`<div class="kv"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`;
+  html+=add(t('f.version'),s.version); html+=add(t('f.playerId'),s.player_id);
+  html+=add(t('f.saveDate'),s.save_date); html+=add(t('f.playTime'),s.play_time_seconds);
+  html+=add(t('f.level'),s.level); html+=add(t('f.exp'),s.experience);
+  html+=add(t('f.hpmp'),`${s.current_health}/${s.current_mana}`); html+=add(t('f.heal'),s.heal_charges);
+  html+=add(t('f.death'),s.death_defiance); html+=add(t('f.weapon'),s.equipped_weapon);
+  html+=add(t('f.spell'),s.equipped_spell); html+=add(t('f.skin'),s.equipped_skin);
+  html+=add(t('f.inv'),s.inventory_count); html+=add(t('f.moves'),(s.vania_moves||[]).length);
+  html+=add(t('f.main'),s.main_objectives_done); html+=add(t('f.arcanaTasks'),s.arcana_completed_tasks);
+  html+=add(t('f.arcanaTalents'),s.arcana_unlocked_talents); html+=add(t('f.cutscenes'),s.watched_cutscenes);
+  html+=add(t('f.tutorials'),s.completed_tutorials); html+=add(t('f.landmarks'),s.discovered_landmarks);
+  html+=add(t('f.rooms'),s.explored_rooms); html+=add(t('f.curse'),s.current_curse);
+  html+=`</div></div>`;
+  if(s.equipped_charms&&s.equipped_charms.length) html+=`<div class="kv full"><span class="k">${t('summary.charms')}</span><span class="v">${esc(s.equipped_charms.join(", "))}</span></div>`;
+  if(s.worlds&&Object.keys(s.worlds).length){html+=`<div class="full" style="margin-top:8px"><b>${t('summary.worlds')}</b>`;for(const n in s.worlds){const w=s.worlds[n];html+=`<div class="kv"><span class="k">${esc(n)}</span><span class="v">${esc(t('summary.worldItem',{a:w.completion_items,b:w.savable_entities}))}</span></div>`;}html+=`</div>`;}
+  if(s.progression_board) html+=`<div class="kv full"><span class="k">${t('summary.board')}</span><span class="v">${esc(t('summary.boardItem',{a:s.progression_board.unlocked,b:s.progression_board.total}))}</span></div>`;
+  html+=`</div>`;
+  return html;
+}
+
+function platformFilename(name,target){
+  const m=name.match(/^(.*?)(\d+)(\.sav)?$/i);
+  if(!m) return name;
+  const prefix=m[1], slot=m[2];
+  return target==="pc" ? `${prefix}${slot}.sav` : `${prefix}${slot}`;
+}
+
+function doConvert(){
+  if(!CURRENT) return;
+  const target=document.getElementById("target").value;
+  const strip=(document.getElementById("strip").value||"").split(",").map(x=>x.trim()).filter(Boolean);
+  const verSel=document.getElementById("veropt").value;
+  let ver=null;
+  if(verSel==="__custom") ver=document.getElementById("vercustom").value.trim();
+  else if(verSel) ver=verSel;
+
+  const changed = strip.length>0 || ver!==null;
+  if(!changed){
+    const blob=new Blob([CURRENT.raw],{type:"application/octet-stream"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob); a.download=CURRENT.name;
+    a.click();
+    const msg=`<div class="card"><h2>${t('conv.done')} <span class="badge b-ok">${t('conv.bytecopy')}</span></h2><div class="note">${t('conv.bytecopyNote',{name:esc(CURRENT.name),target:target})}</div></div>`;
+    document.getElementById("result").insertAdjacentHTML("afterbegin",msg);
+    return;
+  }
+  const [data,changes]=convert(CURRENT.data,strip,ver);
+  const issues=validate(data); const errs=issues.filter(i=>i[0]==="error").length;
+  const txt=JSON.stringify(data,null,0).replace(/, /g,",").replace(/: /g,":");
+  const blob=new Blob([txt],{type:"application/octet-stream"});
+  const a=document.createElement("a");
+  const outName=platformFilename(CURRENT.name,target);
+  a.href=URL.createObjectURL(blob); a.download=outName;
+  a.click();
+  const badge = errs ? `<span class="badge b-err">${t('conv.err')}</span>` : `<span class="badge b-ok">${t('conv.pass')}</span>`;
+  const tip = target==="switch" ? t('conv.tipSwitch') : t('conv.tipPC');
+  let msg=`<div class="card"><h2>${t('conv.done')} ${badge}</h2>`;
+  msg+=`<div class="issue">${t('conv.target',{target:t('target.'+target)})}${ver?esc(t('conv.targetVer',{v:ver})):""}</div>`;
+  for(const [key,params] of changes) msg+=`<div class="issue">- ${esc(t(key,params))}</div>`;
+  msg+=`<div class="note">${t('conv.downloaded',{name:esc(outName)})} ${tip}</div></div>`;
+  document.getElementById("result").insertAdjacentHTML("afterbegin",msg);
+}
+
+/* ===================== 事件绑定 ===================== */
+document.getElementById("veropt").addEventListener("change",e=>{
+  document.getElementById("vercustom-wrap").style.display = e.target.value==="__custom" ? "" : "none";
+});
+
+const drop=document.getElementById("drop"),fileInput=document.getElementById("file");
+drop.addEventListener("click",()=>fileInput.click());
+drop.addEventListener("dragover",e=>{e.preventDefault();drop.classList.add("over");});
+drop.addEventListener("dragleave",()=>drop.classList.remove("over"));
+drop.addEventListener("drop",e=>{e.preventDefault();drop.classList.remove("over");if(e.dataTransfer.files[0])readFile(e.dataTransfer.files[0]);});
+fileInput.addEventListener("change",()=>{if(fileInput.files[0])readFile(fileInput.files[0]);});
+
+function readFile(f){
+  const r=new FileReader();
+  r.onload=()=>{
+    try{const data=JSON.parse(r.result); CURRENT={name:f.name,data,raw:r.result};}
+    catch(err){document.getElementById("result").innerHTML=`<div class="card"><div class="issue" style="color:var(--err)">${t('parse.fail',{msg:esc(err.message)})}</div></div>`;return;}
+    document.getElementById("conv").disabled=false;
+    document.getElementById("rep").disabled=false;
+    document.getElementById("result").innerHTML=render(CURRENT.data,CURRENT.name);
+  };
+  r.readAsText(f);
+}
+
+// 语言选择器:动态构建选项
+const langSel=document.getElementById("lang");
+LANGS.forEach(l=>{const o=document.createElement("option");o.value=l.code;o.textContent=l.label;langSel.appendChild(o);});
+langSel.addEventListener("change",e=>applyLang(e.target.value));
+
+document.getElementById("conv").addEventListener("click",doConvert);
+document.getElementById("rep").addEventListener("click",()=>{if(CURRENT)document.getElementById("result").innerHTML=render(CURRENT.data,CURRENT.name);});
+
+// 初始化语言(默认跟随浏览器,记忆上次选择)
+applyLang(detectLang());
+</script>
+</body>
+</html>
