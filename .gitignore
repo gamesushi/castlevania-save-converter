@@ -7,3 +7,6 @@ __pycache__/
 
 # Generated conversion output (re-created on demand)
 out_pc/
+
+# Personal save samples (not published to the repo)
+samples/
