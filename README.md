@@ -20,13 +20,17 @@ Switch 与 PS5 存档容器都是加密的，本工具只处理**解密后的内
 > ⚠️ **PS5 尚未用真实样本校准**：目前 PS5 的文件名约定与版本号均为合理假设，转换后请
 > 务必在主机上验证存档可被读取。如有 PS5 解密 dump，发我即可校准 `PLATFORMS["ps5"]`。
 
+> 📌 **扩展名速记**：PC 存档是 `BuildSave_N.sav`（**带 `.sav`**），Switch 存档是 `BuildSave_N`（**无扩展名**）。
+> `--target pc` 产出 `.sav`，`--target switch` 产出无扩展名文件——二者都正确，取决于你要在哪台机器上用。
+> **不要把 `.sav` 删掉后缀再喂给 Checkpoint（Switch 工具）**，那是反方向、无效的操作；要放回 Switch 请直接用 `--target switch` 生成无扩展名文件。
+
 ## 功能
 
 - **解析 / 校验**：结构校验，输出可读进度摘要（等级、装备、Arcana 塔罗、探索房间、
   世界进度、进度板）。
 - **无损往返**：不做任何改动时**逐字节原样复制**，绝不破坏存档。
-- **平台转换**：`--target pc|switch|ps5` 只改文件名约定；`--set-version` 独立指定版本号，
-  两者互不绑定。
+- **平台转换**：`--target pc|switch|ps5` 决定输出文件名约定（PC=`.sav` / Switch=无扩展名 / PS5=`.sav`）。
+  版本号默认**自动对齐**目标平台参考版本（PC=1.1.1 / Switch=1.1.0），仍可用 `--set-version` 强制覆盖。
 - **DLC 独占剥离**：`--strip` 可按子串剔除目标平台无授权的内容（如预购皮肤）。
 - **国际化**：网页工具内置 中文 / English / 日本語，默认跟随浏览器语言并记忆选择。
 
@@ -36,8 +40,11 @@ Switch 与 PS5 存档容器都是加密的，本工具只处理**解密后的内
 # 校验 + 进度摘要（不写盘）
 python3 cc_convert.py samples/switch_BuildSave_0 --report
 
-# Switch 存档 → PC（自动对齐版本到 1.1.1，仅改名 + 改扩展名）
-python3 cc_convert.py samples/switch_BuildSave_0 --target pc --set-version 1.1.1 \
+# Switch 存档 → PC（版本默认自动对齐到 1.1.1，无需再写 --set-version）
+python3 cc_convert.py samples/switch_BuildSave_0 --target pc --out out_pc/BuildSave_1.sav
+
+# 若你的 PC 游戏仍是旧版 1.1.0、想强制保持，可显式指定：
+python3 cc_convert.py samples/switch_BuildSave_0 --target pc --set-version 1.1.0 \
     --out out_pc/BuildSave_1.sav
 
 # PC → Switch（仅作数据备份 / 待主机 restore）
@@ -57,7 +64,7 @@ python3 cc_convert.py pc.sav --strip Skin_MC_Alucard,Skin_MC_Trevor --out out.sa
 |---|---|
 | `input` | `.sav` 文件 或 Checkpoint dump 目录（递归找所有存档） |
 | `--target {pc,switch,ps5}` | 目标平台，**仅决定文件名约定**（PS5 为未校准假设） |
-| `--set-version X.Y.Z` | 强制写回的版本号（与平台独立），不传则保留原版本 |
+| `--set-version X.Y.Z` | 强制写回的版本号；**不传则默认对齐目标平台参考版本**（PC=1.1.1 / Switch=1.1.0），可用于覆盖 |
 | `--strip a,b` | 逗号分隔的 item 子串，匹配则剥离 |
 | `--out` / `--out-dir` | 单文件 / 目录镜像输出 |
 | `--report` | 仅打印校验 + 摘要 |
@@ -75,8 +82,8 @@ python3 cc_convert.py pc.sav --strip Skin_MC_Alucard,Skin_MC_Trevor --out out.sa
 3. 生成的文件**改名回 `BuildSave_0` / `BuildSave_1`** 放回原槽位目录
 4. Switch 上 Checkpoint → Restore
 
-> ⚠️ 文件名必须是 `BuildSave_0` / `BuildSave_1`；若版本漂移导致游戏拒读，用
-> `--set-version` 对齐。（注：存档内 `PLAYERPREFS` 含 `transfer_save_done=1`，
+> ⚠️ 文件名必须是 `BuildSave_0` / `BuildSave_1`（**无 `.sav` 后缀**）；版本号现已默认对齐 1.1.0，
+> 一般无需手动处理。若游戏仍拒读，用 `--set-version` 对齐。（注：存档内 `PLAYERPREFS` 含 `transfer_save_done=1`，
 > 说明游戏自带存档转移机制，建议优先试官方转移，本工具作离线兜底。）
 
 ## 已知风险

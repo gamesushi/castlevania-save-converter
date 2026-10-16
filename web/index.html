@@ -81,7 +81,7 @@
         <input id="strip" type="text" placeholder="例: Skin_MC_Alucard,Skin_MC_Trevor"></label>
     </div>
     <div class="row">
-      <button id="conv" data-i18n="btn.convert" disabled>转换并下载 .sav</button>
+      <button id="conv" disabled>转换并下载 .sav</button>
       <button id="rep" class="ghost" data-i18n="btn.report" disabled>仅生成报告</button>
     </div>
     <div class="note" id="note-switch">⚠️ Switch 端请用 <b>Checkpoint</b> 把生成的 .sav 放回 <code>/switch/Checkpoint/saves/.../</code> 对应槽位再 restore。官方云存档不跨平台还原。</div>
@@ -106,7 +106,7 @@ const STRINGS = {
     "strip.placeholder":"例: Skin_MC_Alucard,Skin_MC_Trevor",
     "btn.convert":"转换并下载 .sav",
     "btn.report":"仅生成报告",
-    "note.switch":'⚠️ Switch 端请用 <b>Checkpoint</b> 把生成的 .sav 放回 <code>/switch/Checkpoint/saves/.../</code> 对应槽位再 restore。官方云存档不跨平台还原。',
+    "note.switch":'⚠️ Switch 端请用 <b>Checkpoint</b> 把生成的【无扩展名】文件 BuildSave_N 放回 <code>/switch/Checkpoint/saves/.../</code> 对应槽位再 restore。注意:文件名没有 .sav 后缀。',
     "validate.title":"校验",
     "badge.ok":"通过","badge.warn":"有告警","badge.err":"有错误",
     "lvl.error":"错误","lvl.warning":"告警","lvl.info":"信息",
@@ -143,7 +143,10 @@ const STRINGS = {
     "conv.tipPS5":"PS5 端需破解主机 + Apollo Save Tool / Save Mounter 解密并重新签名;本工具只产出内部 JSON,实际回注需在主机完成。",
     "conv.unverified":"⚠️ 目标平台 {target} 未经真实样本校准(文件名/版本为假设值),请在主机上验证可读性。",
     "parse.fail":"解析失败:{msg}",
-    "target.pc":"PC","target.switch":"Switch","target.ps5":"PS5"
+    "target.pc":"PC","target.switch":"Switch","target.ps5":"PS5",
+    "note.pc":"PC 端把生成的 .sav 放进游戏存档目录(如 Steam userdata 下 remote/)对应空槽位即可。存档内部版本已默认对齐为 1.1.1。若 PC 不识别 BuildSave_0.sav,多半是槽位问题,用 --slot 1(CLI)或重选槽位。",
+    "note.ps5":"PS5 端需破解主机 + Apollo Save Tool / Save Mounter 解密并重新签名;本工具只产出内部 JSON,实际回注需在主机完成。文件名/版本尚未校准。",
+    "btn.convert.pc":"转换并下载 .sav","btn.convert.switch":"转换并下载 (无后缀)","btn.convert.ps5":"转换并下载 .sav (未校准)"
   },
   en: {
     "ui.lang":"Language",
@@ -158,7 +161,7 @@ const STRINGS = {
     "strip.placeholder":"e.g. Skin_MC_Alucard,Skin_MC_Trevor",
     "btn.convert":"Convert & download .sav",
     "btn.report":"Report only",
-    "note.switch":'⚠️ On Switch, use <b>Checkpoint</b> to restore the generated .sav into <code>/switch/Checkpoint/saves/.../</code> for the matching slot. Official cloud saves do not restore across platforms.',
+    "note.switch":'⚠️ On Switch, use <b>Checkpoint</b> to restore the generated extension-LESS file BuildSave_N into <code>/switch/Checkpoint/saves/.../</code> for the matching slot. Note: the file has NO .sav extension.',
     "validate.title":"Validation",
     "badge.ok":"OK","badge.warn":"Warnings","badge.err":"Errors",
     "lvl.error":"error","lvl.warning":"warning","lvl.info":"info",
@@ -195,7 +198,10 @@ const STRINGS = {
     "conv.tipPS5":"On PS5 you need a jailbroken console + Apollo Save Tool / Save Mounter to decrypt & re-sign; this tool only produces the internal JSON — the actual injection is done on the console.",
     "conv.unverified":"⚠️ Target {target} is unverified (filename/version are assumptions) — please verify readability on the console.",
     "parse.fail":"Parse failed: {msg}",
-    "target.pc":"PC","target.switch":"Switch","target.ps5":"PS5"
+    "target.pc":"PC","target.switch":"Switch","target.ps5":"PS5",
+    "note.pc":"On PC, drop the generated .sav into the game's save directory (e.g. under Steam userdata/remote/) as an empty slot. The internal version is auto-aligned to 1.1.1. If PC doesn't recognize BuildSave_0.sav, it's likely a slot issue — use --slot 1 (CLI) or pick a slot.",
+    "note.ps5":"On PS5 you need a jailbroken console + Apollo Save Tool / Save Mounter to decrypt & re-sign; this tool only produces the internal JSON — injection is done on the console. Filename/version are unverified.",
+    "btn.convert.pc":"Convert & download .sav","btn.convert.switch":"Convert & download (no ext)","btn.convert.ps5":"Convert & download .sav (unverified)"
   },
   ja: {
     "ui.lang":"言語",
@@ -210,7 +216,7 @@ const STRINGS = {
     "strip.placeholder":"例: Skin_MC_Alucard,Skin_MC_Trevor",
     "btn.convert":".sav を変換してダウンロード",
     "btn.report":"レポートのみ",
-    "note.switch":'⚠️ Switch では <b>Checkpoint</b> で生成した .sav を <code>/switch/Checkpoint/saves/.../</code> の対応スロットへ戻して restore してください。公式クラウドセーブはクロスプラットフォーム非対応です。',
+    "note.switch":'⚠️ Switch では <b>Checkpoint</b> で生成した【拡張子なし】ファイル BuildSave_N を <code>/switch/Checkpoint/saves/.../</code> の対応スロットへ戻して restore してください。注意:生成ファイルに .sav 拡張子はありません。',
     "validate.title":"検証",
     "badge.ok":"通過","badge.warn":"警告あり","badge.err":"エラーあり",
     "lvl.error":"エラー","lvl.warning":"警告","lvl.info":"情報",
@@ -247,7 +253,10 @@ const STRINGS = {
     "conv.tipPS5":"PS5 では改造済み本体 + Apollo Save Tool / Save Mounter で復号・再署名が必要です。本ツールは内部 JSON を生成するのみで、実際の書き戻しは本体側で行います。",
     "conv.unverified":"⚠️ 対象 {target} は実サンプル未検証です(ファイル名/バージョンは仮定)。本体での読み取り可否を確認してください。",
     "parse.fail":"解析失敗: {msg}",
-    "target.pc":"PC","target.switch":"Switch","target.ps5":"PS5"
+    "target.pc":"PC","target.switch":"Switch","target.ps5":"PS5",
+    "note.pc":"PC では生成した .sav をゲームのセーブディレクトリ(Steam userdata 配下の remote/ など)の空スロットへ配置してください。内部バージョンは 1.1.1 に自動合わせされます。PC が BuildSave_0.sav を認識しない場合はスロットの問題の可能性があり、--slot 1(CLI)やスロット選択をお試しください。",
+    "note.ps5":"PS5 では改造済み本体 + Apollo Save Tool / Save Mounter で復号・再署名が必要です。本ツールは内部 JSON を生成するのみで、実際の書き戻しは本体側です。ファイル名/バージョンは未検証です。",
+    "btn.convert.pc":".sav を変換してダウンロード","btn.convert.switch":"変換してダウンロード (拡張子なし)","btn.convert.ps5":".sav を変換してダウンロード (未検証)"
   }
 };
 
@@ -297,7 +306,8 @@ function applyLang(lang){
   document.getElementById("app-title").textContent = t("app.title");
   document.getElementById("app-sub").textContent = t("app.sub");
   document.getElementById("drop").innerHTML = t("drop.html");
-  document.getElementById("note-switch").innerHTML = t("note.switch");
+  updateNote(document.getElementById("target").value);
+  updateConvBtn(document.getElementById("target").value);
   // data-i18n 静态文案
   document.querySelectorAll("[data-i18n]").forEach(el=>{
     if(el.id==="app-title" || el.id==="app-sub") return; // 已单独处理
@@ -325,6 +335,7 @@ const REQ_PLAYER=["id","saveDate","playTimeInSeconds","levelId","position","leve
 const KNOWN_VERSIONS=new Set(["1.1.0","1.1.1"]);
 
 let CURRENT=null; // {name, data}
+let userPickedVersion=false; // 用户是否手动选过版本(手动后不再随平台自动对齐)
 
 function isMKV(o){return o&&typeof o==="object"&&Array.isArray(o.m_keys)&&Array.isArray(o.m_values);}
 function esc(s){return String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
@@ -439,9 +450,9 @@ function doConvert(){
   if(!changed){
     const blob=new Blob([CURRENT.raw],{type:"application/octet-stream"});
     const a=document.createElement("a");
-    a.href=URL.createObjectURL(blob); a.download=CURRENT.name;
+    a.href=URL.createObjectURL(blob); a.download=platformFilename(CURRENT.name,target);
     a.click();
-    const msg=`<div class="card"><h2>${t('conv.done')} <span class="badge b-ok">${t('conv.bytecopy')}</span></h2><div class="note">${t('conv.bytecopyNote',{name:esc(CURRENT.name),target:target})}</div></div>`;
+    const msg=`<div class="card"><h2>${t('conv.done')} <span class="badge b-ok">${t('conv.bytecopy')}</span></h2><div class="note">${t('conv.bytecopyNote',{name:esc(platformFilename(CURRENT.name,target)),target:target})}</div></div>`;
     document.getElementById("result").insertAdjacentHTML("afterbegin",msg);
     return;
   }
@@ -466,8 +477,33 @@ function doConvert(){
 
 /* ===================== 事件绑定 ===================== */
 document.getElementById("veropt").addEventListener("change",e=>{
+  userPickedVersion = true; // 用户手动改过版本,之后不再随平台自动对齐
   document.getElementById("vercustom-wrap").style.display = e.target.value==="__custom" ? "" : "none";
 });
+
+// 目标平台变化时:若用户未手动选版本,则自动对齐到该平台参考版本;并刷新提示与按钮文案
+document.getElementById("target").addEventListener("change",e=>{
+  const target=e.target.value;
+  if(!userPickedVersion){
+    const rec = target==="pc" ? "1.1.1" : target==="switch" ? "1.1.0" : "";
+    const vo=document.getElementById("veropt");
+    vo.value = rec;
+    document.getElementById("vercustom-wrap").style.display = (rec==="__custom") ? "" : "none";
+  }
+  updateNote(target);
+  updateConvBtn(target);
+});
+
+function updateNote(target){
+  const map={pc:"note.pc",switch:"note.switch",ps5:"note.ps5"};
+  const el=document.getElementById("note-switch");
+  if(el) el.innerHTML=t(map[target]||"note.pc");
+}
+function updateConvBtn(target){
+  const map={pc:"btn.convert.pc",switch:"btn.convert.switch",ps5:"btn.convert.ps5"};
+  const el=document.getElementById("conv");
+  if(el) el.textContent=t(map[target]||"btn.convert.pc");
+}
 
 const drop=document.getElementById("drop"),fileInput=document.getElementById("file");
 drop.addEventListener("click",()=>fileInput.click());
@@ -498,6 +534,17 @@ document.getElementById("rep").addEventListener("click",()=>{if(CURRENT)document
 
 // 初始化语言(默认跟随浏览器,记忆上次选择)
 applyLang(detectLang());
+// 初始:按默认目标平台(PC)对齐版本下拉,并刷新提示/按钮
+(function initDefaults(){
+  const target=document.getElementById("target").value;
+  if(!userPickedVersion){
+    const rec = target==="pc" ? "1.1.1" : target==="switch" ? "1.1.0" : "";
+    const vo=document.getElementById("veropt");
+    if(vo) vo.value = rec;
+  }
+  updateNote(target);
+  updateConvBtn(target);
+})();
 </script>
 </body>
 </html>

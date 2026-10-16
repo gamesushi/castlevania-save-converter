@@ -107,13 +107,18 @@ def main():
     ap.add_argument("--out", help="单文件输出路径(输入为文件时)")
     ap.add_argument("--out-dir", help="目录输出(输入为目录时,镜像结构)")
     ap.add_argument("--target", choices=list(cs.PLATFORMS.keys()), default="pc",
-                    help="目标平台:只决定输出文件名扩展名(.sav / 无扩展名),不影响版本号。"
+                    help="目标平台:只决定输出文件名扩展名(.sav / 无扩展名)。"
+                         "未指定 --set-version 时,版本号默认对齐该平台参考版本"
+                         f"(PC={cs.PLATFORMS['pc']['ref_version']}, Switch={cs.PLATFORMS['switch']['ref_version']})。"
                          "可选: " + ", ".join(cs.PLATFORMS.keys()))
     ap.add_argument("--slot", type=int, default=None,
-                    help="目标槽位序号(各平台独立;不指定则沿用原文件名数字)")
+                    help="目标槽位序号(各平台独立;不指定则沿用原文件名数字)。"
+                         "提示:PC 存档槽位通常从 1 开始(BuildSave_1.sav);"
+                         "若生成的 BuildSave_0.sav 不被 PC 识别,加 --slot 1 重转。")
     ap.add_argument("--report", action="store_true", help="打印校验 + 摘要")
     ap.add_argument("--strip", help="逗号分隔的 item 子串,匹配则剥离(DLC 独占内容)")
-    ap.add_argument("--set-version", help="版本号(与 --target 完全独立;不传则保持原存档版本号)")
+    ap.add_argument("--set-version", help="版本号(与 --target 解耦但默认对齐;不传则取目标平台参考版本,"
+                                         "可用本参数强制指定任意值,如 1.1.0)")
     ap.add_argument("--quiet", action="store_true", help="仅输出最终状态")
     args = ap.parse_args()
 
@@ -179,14 +184,14 @@ def main():
 
     if not args.quiet:
         tip = {
-            "switch": "Switch 端请用 Checkpoint 把生成的文件放回 "
-                      "/switch/Checkpoint/saves/.../ 对应槽位再 restore。",
+            "switch": "Switch 端请用 Checkpoint 把生成的【无扩展名】文件 BuildSave_N 放回 "
+                      "/switch/Checkpoint/saves/.../ 对应槽位再 restore。注意:文件名没有 .sav 后缀。",
             "ps5": "PS5 端需要破解版主机 + Apollo Save Tool / Save Mounter 解密与重新签名;"
                    "本工具只产出内部 JSON 文件,实际回注需你在主机上完成。",
         }.get(
             args.target,
-            "PC 端把生成的 .sav 放进游戏存档目录(如 Steam userdata 下的 "
-            "remote/)对应空槽位即可。")
+            "PC 端把生成的 .sav 放进游戏存档目录(如 Steam userdata 下的 remote/)对应空槽位即可。"
+            "注意:PC 存档版本已默认对齐为 1.1.1;若 PC 不识别 BuildSave_0.sav,多半是槽位问题,加 --slot 1 重转。")
         print("\n完成。" + tip)
 
 

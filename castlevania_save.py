@@ -319,18 +319,36 @@ def convert_to_platform(data, to_platform: str, version: str = None,
                         strip_items=None):
     """
     跨平台转换。
-    目标平台(to_platform)只决定输出文件名扩展名(.sav / 无扩展名);
-    版本号与平台完全解耦 —— 只有显式传入 version 时才改写,否则保持原存档的版本号。
+    目标平台(to_platform)只决定输出文件名扩展名(.sav / 无扩展名)。
+    版本号与平台"解耦但默认对齐":
+      * 显式传入 version  → 用指定值(完全由用户控制)。
+      * 未传 version      → 默认对齐目标平台参考版本(PC=1.1.1 / Switch=1.1.0),
+                            让常见转换开箱即用;该值仍可被 --set-version 覆盖。
+      * 目标平台参考版本为 None(如 PS5 未校准)→ 保持原存档版本号。
     返回 (data, changes, modified)。
     """
-    set_ver = version if version else None
-    _, changes, modified = convert(data, strip_items=strip_items,
-                                   set_version=set_ver)
-    label = platform_label(to_platform)
-    if set_ver:
-        changes.insert(0, f"目标平台: {label} (version -> {set_ver})")
+    cfg = PLATFORMS.get(to_platform)
+    ref_ver = cfg["ref_version"] if cfg else None
+    orig_version = data.get("version")  # 先存原始版本号(convert 会原地改写 data)
+    if version:
+        eff_version = version
+    elif ref_ver:
+        eff_version = ref_ver
     else:
-        changes.insert(0, f"目标平台: {label} (version 保持原值 {data.get('version')})")
+        eff_version = None
+
+    _, changes, modified = convert(data, strip_items=strip_items,
+                                   set_version=eff_version)
+    label = platform_label(to_platform)
+    if version:
+        changes.insert(0, f"目标平台: {label} (version 手动设为 {version})")
+    elif eff_version:
+        changes.insert(
+            0,
+            f"目标平台: {label} (version 默认对齐为 {eff_version};"
+            f"若需保持原值 {orig_version} 请加 --set-version {orig_version})")
+    else:
+        changes.insert(0, f"目标平台: {label} (version 保持原值 {orig_version})")
     if not platform_verified(to_platform):
         changes.insert(
             0,
